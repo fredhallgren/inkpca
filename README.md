@@ -6,7 +6,7 @@ the kernel matrix, which takes into account the changing mean of the
 covariance matrix for additional data points.
 
 This is the most efficient algorithm for incremental kernel PCA currently
-available. See our paper for further details, available at [this link](http://arxiv.org).
+available. See our paper for further details, available at [this link](https://arxiv.org/abs/1802.00043).
 
 We also create the first incremental algorithm for the Nyström approximation
 to the kernel matrix.
