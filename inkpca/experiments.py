@@ -7,7 +7,6 @@ from __future__ import division, print_function
 import data
 from incremental_kpca import IncrKPCA, nystrom_approximation
 from kernels import kernel_matrix, rbf, adjust_K, median_distance
-from chinsuter import ChinSuter
 
 # Built-in modules
 import sys
