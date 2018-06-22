@@ -19,11 +19,33 @@ def expand_eigensystem(L, U, e):
         Current eigenvectors
     e : float
         New eigenvalue
+
     """
     m = L.shape[0]
     L = np.r_[L, [e]]
     U = np.r_[np.c_[U, zeros((m,1))], zeros((1,m+1))]
     U[m,m] = 1
+
+    return L, U
+
+def reduce_eigensystem(L, U, e):
+    """
+    Remove the eigenpair corresponding to the eigenvalue e
+
+    Parameters
+    ----------
+    L : numpy.ndarray, 1d
+        Current eigenvalues
+    U : numpy.ndarray, 2d
+        Current eigenvectors
+    e : float
+        Eigenvalue to be removed
+
+    """
+    ix = np.argmin(np.abs(L - e))
+    L = np.delete(L, ix)
+    U = np.delete(U, ix, axis=0)
+    U = np.delete(U, ix, axis=1)
 
     return L, U
 

@@ -4,7 +4,7 @@
 from __future__ import division, print_function
 
 from kernels import kernel_matrix, adjust_K
-from eigen_update import expand_eigensystem, update_eigensystem
+from eigen_update import expand_eigensystem, reduce_eigensystem, update_eigensystem
 
 from copy import copy, deepcopy
 
@@ -35,6 +35,9 @@ class IncrKPCA(object):
         Whether to adjust the mean
     nystrom : bool
         Calculate incremental Nyström approximation instead
+    decremental : bool
+        Whether to run the decremental algorithm over all data points in the
+        initial kernel matrix
     maxiter : int
         Maximum number of iterations
 
@@ -47,7 +50,7 @@ class IncrKPCA(object):
     """
 
     def __init__(self, X, m0, mmax=None, kernel=kernel_error, adjust=False,
-                     nystrom=False, maxiter=500):
+                     nystrom=False, decremental=False, maxiter=500):
 
         # Setup default arguments
         n = X.shape[0]
@@ -62,10 +65,15 @@ class IncrKPCA(object):
             mmax = n
         self.mmax = min(mmax, n)
 
+        if adjust and decremental:
+            msg = "Decremental algorithm with mean adjustment not implemented."
+            raise NotImplementedError(msg)
+
         self.idx = np.random.permutation(n)
         self.kernel = kernel
         self.adjust = adjust
         self.nystrom = nystrom
+        self.decremental = decremental
 
         # Initial eigensystem
         cols = self.idx[:m0]
@@ -84,12 +92,14 @@ class IncrKPCA(object):
         Initiate the next iteration
 
         """
-        if self.i == self.mmax:
+        if self.i == self.mmax or self.i == 0:
             raise StopIteration
         if self.j == len(self.idx)-self.m0 or self.j == self.maxiter:
             raise StopIteration
 
-        if not self.adjust:
+        if self.decremental:
+            rc, L, U = self.downdate_eig() 
+        elif not self.adjust:
             rc = self.update_eig()
         else:
             rc = self.update_eig_adjust()
@@ -100,6 +110,8 @@ class IncrKPCA(object):
                 self.L_nys, self.U_nys = nystrom_approximation(
                         self.L, self.U, self.K_nm)
                 out = (self.i-1, self.L, self.U, self.L_nys, self.U_nys)
+        if self.decremental:
+            out = (self.i, L, U, self.L, self.U)
 
         self.j += 1
 
@@ -131,9 +143,9 @@ class IncrKPCA(object):
 
         # Order the eigenpairs and update terms
         idx = np.argsort(L)
-        L = L[idx]
-        U = U[:,idx]
-        U = U[idx,:]
+        L  = L[idx]
+        U  = U[:,idx]
+        U  = U[idx,:]
         k1 = k1[idx,:]
         k0 = k0[idx,:]
 
@@ -155,6 +167,24 @@ class IncrKPCA(object):
             rc = 1
 
         return rc
+
+    def downdate_eig(self):
+        """
+	Remove a data point from the eigendecomposition.
+
+        """
+        self.i = self.i-1
+
+        cols = self.idx[:self.m0]
+	col = self.idx[self.i]
+        sigma, k1, k0 = create_update_terms(self.X, cols, col, self.kernel, self.i)
+	
+        L, U = update_eigensystem(self.L, self.U, k1, -sigma)
+        L, U = update_eigensystem(L, U, k0, sigma)
+	import pdb; pdb.set_trace()
+        L, U = reduce_eigensystem(L, U, k0[self.i][0])
+
+        return 0, L, U
 
     def update_eig_adjust(self):
         """
@@ -251,7 +281,7 @@ def init_vars(K_mm):
 
     return L, U, capsig, K1
 
-def create_update_terms(X, cols, col, kernel):
+def create_update_terms(X, cols, col, kernel, i=-1):
     """
     Create the terms supplied to eigenvalue update algorithm
 
@@ -263,6 +293,8 @@ def create_update_terms(X, cols, col, kernel):
         Indices of columns to create the kernel matrix
     col : float
         The additional column index
+    i : int
+        Index to update
 
     Returns
     -------
@@ -271,10 +303,10 @@ def create_update_terms(X, cols, col, kernel):
 
     """
     k1 = kernel_matrix(X, kernel, cols, [col])
-    k = copy(k1[-1][0])
-    k1[-1] = k / 2
+    k = copy(k1[i][0])
+    k1[i] = k / 2
     k0 = deepcopy(k1) # numpy pass by reference
-    k0[-1] = k / 4
+    k0[i] = k / 4
     sigma = 4 / k
 
     return sigma, k1, k0

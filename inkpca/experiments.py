@@ -7,7 +7,6 @@ from __future__ import division, print_function
 import data
 from incremental_kpca import IncrKPCA, nystrom_approximation
 from kernels import kernel_matrix, rbf, adjust_K, median_distance
-from chinsuter import ChinSuter
 
 # Built-in modules
 import sys
@@ -59,11 +58,13 @@ def main(dataset='magic', datasize=1000):
 
     m0 = 20
 
-    incremental_experiment(X, m0, mmax, kernel, dataset)
+    #incremental_experiment(X, m0, mmax, kernel, dataset)
 
-    incremental_experiment(X, m0, mmax, kernel, dataset, adjust=True)
+    #incremental_experiment(X, m0, mmax, kernel, dataset, adjust=True)
 
-    nystrom_experiment(Xcut, m0, mmax, kernel, dataset)
+    #nystrom_experiment(Xcut, m0, mmax, kernel, dataset)
+
+    decremental_experiment(X, 10, kernel, dataset)
 
 
 def incremental_experiment(X, m0, mmax, kernel, dataset, adjust=False):
@@ -137,6 +138,44 @@ def nystrom_experiment(X, m0, mmax, kernel, dataset):
 
     plotting(range(m0, m0+len(fnorms)), fnorms, dataset, "m", "Frobenius norm")
 
+
+def decremental_experiment(X, m0, kernel, dataset):
+    """
+    Experiment for the decremental kernel pca algorithm. Given a size of
+    the kernel matrix, each data point in the matrix is removed decrementally
+    and the residual error is calculated.
+
+    Parameters
+    ----------
+
+    X : numpy.ndarray, 2d
+        Data matrix
+    m0 : int
+        Size of the kernel matrix
+    kernel : callable
+        Kernel function
+    dataset : str
+        Either 'magic' or 'yeast'
+
+    """
+    print("\nDecremental kernel PCA")
+    inc = IncrKPCA(X, m0, decremental=True, kernel=kernel)
+    reserr = []
+    for i, L, U, L0, U0 in inc:
+	print(i)
+        idx = inc.get_idx_array()
+        K = kernel_matrix(X, kernel, idx[:m0], idx[:m0])
+        k = K[i][i]
+        u = K[i]
+        u = np.delete(u, i)
+	u = np.expand_dims(u, 1)
+        f = u.T.dot(U.dot((np.diag(1/L)).dot(U.T.dot(u))))
+	print(f)
+        r = k - f
+        reserr.append(r[0][0])
+
+    plotting(np.arange(len(reserr)), np.array(reserr)[::-1], dataset, "m", "Frobenius norm")
+    
 
 def plotting(x, y, title, xlabel, ylabel):
     plt.figure()
