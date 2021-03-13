@@ -79,7 +79,7 @@ class IncrKPCA(object):
         if self.nystrom:
             self.K_nm = kernel_matrix(X, kernel, range(n), cols)
 
-    def next(self):
+    def __next__(self):
         """
         Initiate the next iteration
 
@@ -104,9 +104,12 @@ class IncrKPCA(object):
         self.j += 1
 
         if rc:
-            return self.next()
+            return self.__next__()
         else:
             return out
+
+    def next(self):
+        return self.__next__()
 
     def update_K_nm(self):
         """
