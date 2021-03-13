@@ -37,4 +37,4 @@ To run the experiments, do from this folder
     cd inkpca
     python experiments.py
 
-Tested on Ubuntu 16.04
+Tested on Ubuntu 20.04
