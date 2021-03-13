@@ -20,7 +20,7 @@ on two datasets from the UCI Machine Learning repository are included.
 Requirements
 ------------
 
-* Python 2.7
+* Python 3.6
 
 * Numpy
 
