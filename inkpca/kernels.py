@@ -19,7 +19,7 @@ def median_distance(X, n=1000):
     Median distance between pairs of a subset of data examples
 
     """
-    dist = np.zeros((n+1)*n/2)
+    dist = np.zeros((n+1)*n//2)
     for k, t in enumerate(combinations_with_replacement(range(n),2)):
         dist[k] = np.sqrt(np.sum(np.power(X[t[0],:] - X[t[1],:],2)))
     sigma = np.median(dist)
