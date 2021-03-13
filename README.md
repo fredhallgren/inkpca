@@ -45,10 +45,12 @@ Citation
 
 If you found this package useful then please consider citing the paper.
 
+```
 @article{hallgren2018incremental,
   title={Incremental kernel PCA and the Nyström method},
   author={Hallgren, Fredrik and Northrop, Paul},
   journal={arXiv preprint arXiv:1802.00043},
   year={2018}
 }
+```
 
